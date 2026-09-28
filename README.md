@@ -102,19 +102,13 @@ cipher_char = chr((ord(char) - 65 + shift) % 26 + 65)
 └── .github/workflows/pages.yml
 ```
 
-## Deploy to GitHub Pages
 
-1. Push this repository to GitHub (branch `main`).
-2. Go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. The included workflow runs the tests and publishes the site on every push to `main`.
 
 ## Security note
 
 Caesar, Vigenère and Atbash are **teaching ciphers**. They can be broken in milliseconds (the attack lab proves it). Never use them to protect real data. For real applications use a vetted library and a modern algorithm such as AES-GCM or ChaCha20-Poly1305.
 
-## Ideas to extend it
 
-- Add a Playfair or rail-fence cipher.
 - Add a Kasiski / index-of-coincidence attack on Vigenère.
 - Add a "compare with AES" panel using the Web Crypto API.
 
