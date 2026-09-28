@@ -1,4 +1,4 @@
-project 2: DECODE LAB # Cipher Lab
+# Cipher Lab
 
 **· Basic Encryption & Decryption** 
 
