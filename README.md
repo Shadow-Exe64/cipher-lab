@@ -1,6 +1,6 @@
 # Cipher Lab
 
-**Project 2 · Basic Encryption & Decryption** · DecodeLabs Cyber Security Internship, Batch 2026
+**· Basic Encryption & Decryption** 
 
 An interactive workbench that encrypts and decrypts text with the **Caesar**, **Vigenère** and **Atbash** ciphers. A live cipher wheel shows exactly which letter becomes which, a step-by-step table shows the math behind every character, and a built-in **attack lab** breaks your own message to show why classical ciphers are not secure.
 
