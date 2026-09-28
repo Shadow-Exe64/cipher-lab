@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cipher Lab — Basic Encryption &amp; Decryption</title>
+  <meta name="description" content="Encrypt and decrypt text with Caesar, Vigenère and Atbash ciphers, watch the cipher wheel turn, then break your own message in the attack lab.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%235B3FF0'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23fff' stroke-width='2.5' stroke-dasharray='3 2.4'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23E6B95C'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script>
+    // Apply saved theme before first paint to avoid a flash.
+    try { const t = localStorage.getItem('cipherlab.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#workbench" aria-label="Cipher Lab home">
+        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="var(--accent)"/><circle cx="16" cy="16" r="8" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 2.4"/><circle cx="16" cy="16" r="2.5" fill="var(--brass)"/></svg>
+        <span>Cipher Lab</span>
+      </a>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab" role="tab" id="t-workbench" aria-controls="workbench" aria-selected="true" data-tab="workbench">Workbench</button>
+        <button class="tab" role="tab" id="t-attack" aria-controls="attack" aria-selected="false" data-tab="attack" tabindex="-1">Break it</button>
+        <button class="tab" role="tab" id="t-learn" aria-controls="learn" aria-selected="false" data-tab="learn" tabindex="-1">How it works</button>
+      </nav>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" title="Switch colour theme">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+
+    <!-- ===================== WORKBENCH ===================== -->
+    <section id="workbench" role="tabpanel" aria-labelledby="t-workbench">
+      <div class="intro">
+        <h1>Scramble a message. Then get it back.</h1>
+        <p>Type anything below. Your text is transformed by simple math, character by character, and the wheel shows exactly which letter becomes which. Nothing leaves your browser.</p>
+      </div>
+
+      <div class="bench">
+        <div class="bench-main stack" style="--gap:1rem">
+
+          <div class="card controls">
+            <div class="controls-row">
+              <div>
+                <span class="label" id="mode-label">Direction</span>
+                <div class="seg" role="group" aria-labelledby="mode-label" id="mode-seg">
+                  <button type="button" data-mode="encrypt" aria-pressed="true">Encrypt</button>
+                  <button type="button" data-mode="decrypt" aria-pressed="false">Decrypt</button>
+                </div>
+              </div>
+              <div>
+                <span class="label" id="method-label">Method</span>
+                <div class="seg" role="group" aria-labelledby="method-label" id="method-seg">
+                  <button type="button" data-method="caesar" aria-pressed="true">Caesar</button>
+                  <button type="button" data-method="vigenere" aria-pressed="false">Vigenère</button>
+                  <button type="button" data-method="atbash" aria-pressed="false">Atbash</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="key-area" id="key-caesar">
+              <div class="key-head">
+                <label for="shift-range">Shift key</label>
+                <output id="shift-out" class="key-value mono" for="shift-range">3</output>
+              </div>
+              <input id="shift-range" type="range" min="1" max="25" value="3" aria-describedby="shift-hint">
+              <p class="hint" id="shift-hint">Each letter moves this many places along the alphabet. Both sides need the same number.</p>
+              <label class="check"><input id="digits" type="checkbox"> Shift digits (0–9) as well</label>
+            </div>
+
+            <div class="key-area" id="key-vigenere" hidden>
+              <label for="keyword">Keyword</label>
+              <input id="keyword" type="text" value="SECRET" autocomplete="off" spellcheck="false" maxlength="40" aria-describedby="kw-hint">
+              <p class="hint" id="kw-hint">Each letter of the keyword sets the shift for one letter of your message (A = 0 … Z = 25), then the keyword repeats.</p>
+            </div>
+
+            <div class="key-area" id="key-atbash" hidden>
+              <p class="hint" style="margin:0">Atbash needs no key. It mirrors the alphabet: A ↔ Z, B ↔ Y, C ↔ X. Running it twice gives back the original.</p>
+            </div>
+          </div>
+
+          <div class="io">
+            <div class="card">
+              <div class="row io-head">
+                <label for="input" id="input-label">Your message</label>
+              </div>
+              <textarea id="input" rows="7" spellcheck="false" placeholder="Type or paste text here…">Meet me at the library at 5 pm. Bring the notes!</textarea>
+              <div class="row" style="margin-top:.6rem">
+                <button class="btn btn-sm" type="button" id="btn-sample">Try a sample</button>
+                <label class="btn btn-sm file-btn" for="file-in">Open .txt<input id="file-in" type="file" accept=".txt,text/plain" class="sr-only"></label>
+                <button class="btn btn-sm btn-quiet" type="button" id="btn-clear">Clear</button>
+              </div>
+            </div>
+
+            <div class="card result-card" id="result-card">
+              <div class="row io-head">
+                <span class="label" id="output-label">Ciphertext</span>
+              </div>
+              <div id="output" class="output mono" role="textbox" aria-readonly="true" aria-labelledby="output-label" aria-live="polite" tabindex="0"></div>
+              <div id="error" class="error" role="alert" hidden></div>
+              <div class="row" style="margin-top:.6rem">
+                <button class="btn btn-sm btn-primary" type="button" id="btn-copy">Copy</button>
+                <button class="btn btn-sm" type="button" id="btn-swap" title="Move the result into the input and flip direction">Use as input</button>
+                <button class="btn btn-sm btn-quiet" type="button" id="btn-download">Save .txt</button>
+              </div>
+              <div class="row result-meta">
+                <span class="badge ok" id="verify-badge">Round trip verified</span>
+                <span class="muted small" id="stats"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <h2 style="margin:0">Watch the math</h2>
+              <span class="spacer"></span>
+              <span class="muted small" id="steps-note"></span>
+            </div>
+            <p class="muted" id="steps-lead" style="margin-top:.4rem">Every letter goes through the same short pipeline. Here are the first characters of your text.</p>
+            <div class="table-wrap"><table id="steps-table"><thead></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+
+        <aside class="bench-side">
+          <div class="card wheel-card">
+            <h2 class="wheel-title">Cipher wheel</h2>
+            <svg id="wheel" viewBox="0 0 320 320" role="img" aria-labelledby="wheel-desc">
+              <desc id="wheel-desc">A cipher wheel. The outer ring is the plain alphabet. The inner ring is the cipher alphabet and turns with the key.</desc>
+            </svg>
+            <p class="wheel-caption" id="wheel-caption"></p>
+            <dl class="legend">
+              <div><dt><i class="dot dot-outer"></i>Outer ring</dt><dd>plain letters</dd></div>
+              <div><dt><i class="dot dot-inner"></i>Inner ring</dt><dd>cipher letters</dd></div>
+              <div><dt><i class="dot dot-hit"></i>Highlight</dt><dd>the last letter you typed</dd></div>
+            </dl>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===================== ATTACK LAB ===================== -->
+    <section id="attack" role="tabpanel" aria-labelledby="t-attack" hidden>
+      <div class="intro">
+        <h1>Now break it.</h1>
+        <p>A Caesar cipher has only 25 possible keys, so an attacker simply tries all of them and picks the result that reads like English. Paste any Caesar ciphertext and watch it fall.</p>
+      </div>
+
+      <div class="card stack" style="--gap:.9rem">
+        <div class="row">
+          <label for="attack-input" style="margin:0">Ciphertext to crack</label>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" type="button" id="btn-from-bench">Use my Workbench result</button>
+          <button class="btn btn-sm btn-primary" type="button" id="btn-challenge">Give me a challenge</button>
+        </div>
+        <textarea id="attack-input" rows="4" spellcheck="false" placeholder="Paste ciphertext here, for example: Whvw prvw ilqh…"></textarea>
+        <div id="challenge-box" class="challenge" hidden>
+          <label for="guess" style="margin:0">Which shift was used?</label>
+          <input id="guess" type="number" min="1" max="25" inputmode="numeric" aria-describedby="challenge-msg">
+          <button class="btn btn-sm btn-primary" type="button" id="btn-check">Check</button>
+          <button class="btn btn-sm" type="button" id="btn-reveal">Reveal</button>
+          <span id="challenge-msg" class="muted small" role="status"></span>
+        </div>
+      </div>
+
+      <div id="attack-empty" class="empty card">
+        <h2>Nothing to crack yet</h2>
+        <p class="muted">Paste some ciphertext above, or press <strong>Give me a challenge</strong> and we will hide a message for you.</p>
+      </div>
+
+      <div id="attack-results" hidden>
+        <div class="verdict card" id="verdict"></div>
+
+        <div class="attack-grid">
+          <div class="card">
+            <h2>All 25 keys, ranked</h2>
+            <p class="muted small">Ranked by how closely each result matches English letter frequencies (lower distance is better).</p>
+            <ol class="cands" id="cands"></ol>
+          </div>
+          <div class="stack" style="--gap:1rem">
+            <div class="card">
+              <div class="row"><h2 style="margin:0" id="cand-title">Selected result</h2><span class="spacer"></span><button class="btn btn-sm" id="btn-cand-copy" type="button">Copy</button></div>
+              <div id="cand-text" class="output mono" tabindex="0" style="margin-top:.75rem"></div>
+            </div>
+            <div class="card">
+              <h2>Why it works: the pattern survives</h2>
+              <p class="muted small">A Caesar shift only slides the bars sideways. The shape of the letter distribution stays the same, so the tallest bar gives the key away.</p>
+              <div id="freq-chart" class="freq"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== LEARN ===================== -->
+    <section id="learn" role="tabpanel" aria-labelledby="t-learn" hidden>
+      <div class="intro">
+        <h1>How the shift works</h1>
+        <p>Encryption is a function you can run backwards. Understand these four ideas and you understand the whole project.</p>
+      </div>
+
+      <div class="learn-grid">
+        <article class="card">
+          <h2>Input, process, output</h2>
+          <div class="ipo">
+            <div><strong>Plaintext</strong><span>readable data</span></div>
+            <svg viewBox="0 0 24 12" width="28" aria-hidden="true"><path d="M0 6h20m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <div class="ipo-mid"><strong>Algorithm + key</strong><span>the rules and the secret</span></div>
+            <svg viewBox="0 0 24 12" width="28" aria-hidden="true"><path d="M0 6h20m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <div><strong>Ciphertext</strong><span>unreadable without the key</span></div>
+          </div>
+          <p class="muted" style="margin-top:1rem">Every cryptographic system, from Caesar to AES, follows this shape. Only the middle box changes.</p>
+        </article>
+
+        <article class="card">
+          <h2>Text becomes numbers first</h2>
+          <p>Computers store letters as numbers (ASCII). <code>A</code> is 65, <code>Z</code> is 90, <code>a</code> is 97, <code>z</code> is 122. We do not shift letters; we shift integers.</p>
+          <p style="margin-bottom:.5rem">Try one letter through the pipeline:</p>
+          <div class="row pipe-inputs">
+            <div><label for="pipe-char">Letter</label><input id="pipe-char" type="text" value="Y" maxlength="1" style="width:4.5rem" autocomplete="off"></div>
+            <div><label for="pipe-key">Shift</label><input id="pipe-key" type="number" value="3" min="-25" max="25" style="width:5.5rem"></div>
+          </div>
+          <ol class="pipe" id="pipe"></ol>
+        </article>
+
+        <article class="card">
+          <h2>The two formulas</h2>
+          <p class="formula mono">E(x) = (x + n) mod 26</p>
+          <p class="formula mono">D(x) = (x − n) mod 26</p>
+          <p class="muted">x is the letter's position (A = 0), n is the key. The <code>mod 26</code> wraps <code>Y + 3 = 27</code> back around to <code>B</code>.</p>
+          <p class="muted"><strong>Watch out:</strong> in JavaScript, <code>-3 % 26</code> is <code>-3</code>, not <code>23</code>. This project uses a true modulo so decryption never breaks.</p>
+        </article>
+
+        <article class="card">
+          <h2>The same idea in Python</h2>
+          <pre id="py-code"><code>def caesar(text, shift, decrypt=False):
+    if decrypt:
+        shift = -shift
+    result = []
+    for ch in text:
+        if ch.isascii() and ch.isalpha():
+            base = ord("A") if ch.isupper() else ord("a")
+            result.append(chr((ord(ch) - base + shift) % 26 + base))
+        else:
+            result.append(ch)      # keep spaces and punctuation
+    return "".join(result)
+
+secret = caesar("Hello, World!", 3)          # Khoor, Zruog!
+print(caesar(secret, 3, decrypt=True))       # Hello, World!</code></pre>
+          <div class="row" style="margin-top:.75rem"><button class="btn btn-sm" id="btn-copy-py" type="button">Copy code</button><span class="muted small">A command-line version lives in <code>python/</code>.</span></div>
+        </article>
+
+        <article class="card">
+          <h2>Why Caesar is a lockbox, not a vault</h2>
+          <ul class="plain">
+            <li><strong>Tiny key space.</strong> Only 25 keys. A laptop tries them all in well under a millisecond.</li>
+            <li><strong>Patterns survive.</strong> The letter E is still the most common letter, just relabelled. Frequency analysis spots it.</li>
+          </ul>
+          <p class="muted">Vigenère hides the pattern by changing the shift per letter, but it still falls to statistical attacks. Try both in the Workbench.</p>
+        </article>
+
+        <article class="card">
+          <h2>Where real encryption goes next</h2>
+          <ul class="plain">
+            <li><strong>Confusion and diffusion.</strong> Modern ciphers scramble the relationship between key and output, and spread each input bit across many output bits.</li>
+            <li><strong>Huge keys.</strong> AES uses 128-bit or larger keys: about 3.4 × 10<sup>38</sup> possibilities instead of 25.</li>
+            <li><strong>XOR and substitution rounds</strong> repeated many times.</li>
+          </ul>
+          <p class="muted"><strong>Never use Caesar, Vigenère or Atbash to protect anything real.</strong> They are for learning.</p>
+        </article>
+
+        <article class="card learn-wide">
+          <h2>Project deliverables</h2>
+          <p class="muted">Tick these off as you go. Your progress is saved in this browser.</p>
+          <ul class="checklist" id="deliverables">
+            <li><label class="check"><input type="checkbox" data-d="ipo"> Implement the IPO cycle: input, process, output</label></li>
+            <li><label class="check"><input type="checkbox" data-d="math"> Apply the math: <code>ord()</code>, <code>chr()</code>, <code>% 26</code></label></li>
+            <li><label class="check"><input type="checkbox" data-d="edge"> Handle edge cases: spaces, punctuation, wrap-around</label></li>
+            <li><label class="check"><input type="checkbox" data-d="validate"> Validate with the decryption function</label></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="muted small" style="margin:0">Cipher Lab is a learning project for the DecodeLabs Cyber Security internship (Project 2). Classical ciphers are not secure. Everything runs locally in your browser; no text is sent anywhere.</p>
+    </div>
+  </footer>
+
+  <div class="toast-region" id="toasts" aria-live="polite"></div>
+
+  <script src="assets/js/cipher.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
